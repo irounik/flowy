@@ -1,0 +1,1 @@
+"""ADK prompt templates."""

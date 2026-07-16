@@ -6,14 +6,14 @@ Async agentic workflow platform — monorepo for AI-powered workflows that run o
 
 Flowy is an async workflow execution platform for AI agents. Workflows can be triggered manually or by external events and support LLM reasoning, tool calls, MCP servers, human approvals, notifications, and conversational interaction.
 
-**MVP scope:** Backend only. A dynamic workflow creator UI will be added in a future iteration.
+**MVP scope:** Backend API + visual workflow designer UI. The designer supports drag-and-drop workflow composition; backend execution integrates with built-in ADK workflows.
 
 ## Monorepo Structure
 
 ```
 flowy/
 ├── backend/          # FastAPI + Google ADK 2.0 workflow runtime
-├── frontend/         # Placeholder for future workflow designer UI
+├── frontend/         # React workflow designer (Vite + TypeScript + Tailwind)
 ├── docker-compose.yml
 └── Makefile
 ```
@@ -57,7 +57,15 @@ make migrate
 make dev
 ```
 
+### 6. Start the workflow designer UI
+
+```bash
+make install-frontend
+make dev-frontend
+```
+
 API available at `http://localhost:8000`. Interactive docs at `http://localhost:8000/docs`.
+Designer UI at `http://localhost:5173`.
 
 ## Built-in Workflows
 

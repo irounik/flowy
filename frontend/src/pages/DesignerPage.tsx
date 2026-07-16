@@ -14,7 +14,7 @@ import {
   type WorkflowDefinition,
   type WorkflowNodeData,
 } from '@/lib/workflow-types';
-import { registerWorkflow, runWorkflow, saveWorkflowLocal } from '@/lib/api';
+import { runDynamicWorkflow, saveWorkflowLocal } from '@/lib/api';
 import type { WorkflowNodeType } from '@/design-system/tokens';
 
 export function DesignerPage() {
@@ -76,23 +76,22 @@ export function DesignerPage() {
   }, [getDefinition, workflowName]);
 
   const handleRun = useCallback(async () => {
+    if (nodes.length === 0) {
+      setStatusMessage('Add at least one node before running');
+      return;
+    }
     setIsRunning(true);
     setStatusMessage('Starting execution…');
     try {
-      const slug = workflowName.toLowerCase().replace(/\s+/g, '-');
-      try {
-        await registerWorkflow(slug, workflowDescription);
-      } catch {
-        // May already exist
-      }
-      const result = await runWorkflow(slug === 'untitled-workflow' ? 'research' : slug);
-      setStatusMessage(`Execution started: ${result.execution_id}`);
+      const def = getDefinition();
+      const result = await runDynamicWorkflow({ ...def, input: { source: 'designer' } });
+      setStatusMessage(`Execution started: ${result.execution_id.slice(0, 8)}…`);
     } catch (err) {
       setStatusMessage(err instanceof Error ? err.message : 'Run failed — is the backend running?');
     } finally {
       setIsRunning(false);
     }
-  }, [workflowName, workflowDescription]);
+  }, [getDefinition, nodes.length]);
 
   const loadTemplate = useCallback((def: WorkflowDefinition) => {
     setWorkflowName(def.name);

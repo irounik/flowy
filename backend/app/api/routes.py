@@ -13,6 +13,8 @@ from app.schemas import (
     ApprovalResponse,
     ChatRequest,
     ChatResponse,
+    DynamicWorkflowDefinition,
+    DynamicWorkflowRunResponse,
     ExecutionDetailResponse,
     ExecutionResponse,
     ExecutionStartResponse,
@@ -48,6 +50,18 @@ async def _run_workflow_background(
         await runtime.run_workflow(execution_id, workflow_name, input_data)
 
 
+async def _run_dynamic_workflow_background(
+    execution_id: uuid.UUID,
+    definition: dict,
+    resume_payload: dict | None = None,
+) -> None:
+    from app.adk.dynamic_runner import DynamicWorkflowRunner
+
+    async with async_session_factory() as session:
+        runner = DynamicWorkflowRunner(session)
+        await runner.run(execution_id, definition, resume_payload)
+
+
 async def _resume_workflow_background(
     execution_id: uuid.UUID,
     workflow_name: str,
@@ -57,6 +71,18 @@ async def _resume_workflow_background(
     async with async_session_factory() as session:
         runtime = ADKRuntime(session)
         await runtime.resume_after_approval(execution_id, workflow_name, decision, comments)
+
+
+async def _resume_dynamic_workflow_background(
+    execution_id: uuid.UUID,
+    definition: dict,
+    decision: str,
+) -> None:
+    from app.adk.dynamic_runner import DynamicWorkflowRunner
+
+    async with async_session_factory() as session:
+        runner = DynamicWorkflowRunner(session)
+        await runner.resume_after_approval(execution_id, definition, decision)
 
 
 # --- Workflow APIs ---
@@ -97,6 +123,37 @@ async def disable_workflow(workflow: str, session: AsyncSession = Depends(get_db
         return await service.disable(workflow)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.post("/workflows/dynamic/run", response_model=DynamicWorkflowRunResponse)
+async def run_dynamic_workflow(
+    body: DynamicWorkflowDefinition,
+    background_tasks: BackgroundTasks,
+    session: AsyncSession = Depends(get_db),
+):
+    """Execute a user-designed workflow graph from the designer UI."""
+    if not body.nodes:
+        raise HTTPException(status_code=400, detail="Workflow must contain at least one node")
+
+    slug = body.name.lower().replace(" ", "-")
+    wf_service = WorkflowService(session)
+    db_workflow = await wf_service.get_by_name(slug)
+    if not db_workflow:
+        db_workflow = await wf_service.register(slug, body.description, body.version)
+
+    definition = body.model_dump()
+    exec_service = ExecutionService(session)
+    execution = await exec_service.create_execution(
+        db_workflow.id,
+        trigger_type="dynamic",
+        context={"input": body.input, "workflow_definition": definition},
+    )
+    background_tasks.add_task(_run_dynamic_workflow_background, execution.id, definition)
+    return DynamicWorkflowRunResponse(
+        execution_id=execution.id,
+        workflow_name=slug,
+        status="RUNNING",
+    )
 
 
 @router.post("/workflows/{workflow}/run", response_model=ExecutionStartResponse)
@@ -241,16 +298,25 @@ async def approve_request(
     if approved:
         execution = await ExecutionService(session).get_execution(approval.execution_id)
         if execution:
-            wf_service = WorkflowService(session)
-            workflow = await wf_service.get_by_id(execution.workflow_id)
-            if workflow:
+            definition = execution.context.get("workflow_definition")
+            if definition:
                 background_tasks.add_task(
-                    _resume_workflow_background,
+                    _resume_dynamic_workflow_background,
                     approval.execution_id,
-                    workflow.name,
+                    definition,
                     body.decision,
-                    body.comments,
                 )
+            else:
+                wf_service = WorkflowService(session)
+                workflow = await wf_service.get_by_id(execution.workflow_id)
+                if workflow:
+                    background_tasks.add_task(
+                        _resume_workflow_background,
+                        approval.execution_id,
+                        workflow.name,
+                        body.decision,
+                        body.comments,
+                    )
 
     return approval
 

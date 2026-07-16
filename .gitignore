@@ -51,3 +51,6 @@ Thumbs.db
 
 # Database
 *.db
+
+# Playwright
+artifacts/test-results/

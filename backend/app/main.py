@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import router
 from app.config import settings
-from app.database.session import async_session_factory
+from app.database.session import Base, async_session_factory, engine
 from app.adk.runtime import WORKFLOW_REGISTRY
 from app.services import WorkflowService
 
@@ -32,8 +32,17 @@ async def seed_workflows() -> None:
         logger.warning("workflow seed skipped: %s", exc)
 
 
+async def init_database() -> None:
+    """Create tables when using SQLite for local demos."""
+    if settings.database_url.startswith("sqlite"):
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        logger.info("sqlite database initialized")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    await init_database()
     await seed_workflows()
     yield
 

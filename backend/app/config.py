@@ -13,9 +13,10 @@ class Settings(BaseSettings):
     debug: bool = True
     log_level: str = "INFO"
 
-    database_url: str = "postgresql+asyncpg://flowy:flowy@localhost:5432/flowy"
+    database_url: str = "sqlite+aiosqlite:///./flowy.db"
 
     google_api_key: str = ""
+    mock_llm: bool = True
 
     slack_webhook_url: str = ""
     smtp_host: str = ""

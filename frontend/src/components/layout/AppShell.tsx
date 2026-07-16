@@ -21,6 +21,7 @@ export function AppShell() {
             to={to}
             end={end}
             title={label}
+            data-testid={`nav-${label.toLowerCase()}`}
             className={({ isActive }) =>
               cn(
                 'flex items-center justify-center w-10 h-10 rounded-fds-md transition-all duration-[var(--fds-duration-fast)]',

@@ -39,6 +39,7 @@ export function WorkflowToolbar({
           onChange={(e) => onNameChange(e.target.value)}
           placeholder="Workflow name"
           className="max-w-[200px] font-semibold"
+          data-testid="workflow-name"
         />
         <Input
           value={workflowDescription}
@@ -68,7 +69,7 @@ export function WorkflowToolbar({
           <Download size={15} />
           Export
         </Button>
-        <Button variant="primary" size="sm" onClick={onRun} disabled={isRunning}>
+        <Button variant="primary" size="sm" onClick={onRun} disabled={isRunning} data-testid="run-workflow">
           <Play size={15} />
           {isRunning ? 'Running…' : 'Run'}
         </Button>

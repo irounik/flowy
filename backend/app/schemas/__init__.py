@@ -93,3 +93,33 @@ class ManualTriggerRequest(BaseModel):
 
 class WebhookTriggerRequest(BaseModel):
     payload: dict[str, Any] = Field(default_factory=dict)
+
+
+class DynamicWorkflowNode(BaseModel):
+    id: str
+    type: str
+    label: str
+    description: str | None = None
+    position: dict[str, float] = Field(default_factory=dict)
+    config: dict[str, Any] = Field(default_factory=dict)
+
+
+class DynamicWorkflowEdge(BaseModel):
+    id: str
+    source: str
+    target: str
+
+
+class DynamicWorkflowDefinition(BaseModel):
+    id: str | None = None
+    name: str
+    description: str = ""
+    version: str = "0.1.0"
+    nodes: list[DynamicWorkflowNode]
+    edges: list[DynamicWorkflowEdge]
+    input: dict[str, Any] = Field(default_factory=dict)
+
+
+class DynamicWorkflowRunResponse(ExecutionStartResponse):
+    workflow_name: str
+    status: str = "RUNNING"

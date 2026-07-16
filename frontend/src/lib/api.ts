@@ -31,6 +31,46 @@ export async function registerWorkflow(name: string, description: string): Promi
   return res.json();
 }
 
+export async function runDynamicWorkflow(
+  definition: Record<string, unknown>,
+): Promise<ExecutionStartResponse & { workflow_name: string; status: string }> {
+  const res = await fetch(`${API_BASE}/workflows/dynamic/run`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(definition),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail ?? 'Failed to run dynamic workflow');
+  }
+  return res.json();
+}
+
+export interface ExecutionResponse {
+  id: string;
+  workflow_id: string;
+  status: string;
+  trigger_type: string;
+  current_node: string | null;
+  context: Record<string, unknown>;
+  metrics: Record<string, unknown>;
+  started_at: string | null;
+  finished_at: string | null;
+  created_at: string;
+}
+
+export async function listExecutions(): Promise<ExecutionResponse[]> {
+  const res = await fetch(`${API_BASE}/executions`);
+  if (!res.ok) throw new Error('Failed to fetch executions');
+  return res.json();
+}
+
+export async function getExecution(id: string): Promise<ExecutionResponse> {
+  const res = await fetch(`${API_BASE}/executions/${id}`);
+  if (!res.ok) throw new Error('Failed to fetch execution');
+  return res.json();
+}
+
 export async function runWorkflow(
   workflowName: string,
   input: Record<string, unknown> = {},

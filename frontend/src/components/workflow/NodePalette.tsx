@@ -41,6 +41,7 @@ export function NodePalette({ onAddNode }: NodePaletteProps) {
           <div
             key={item.type}
             draggable
+            data-testid={`palette-${item.type}`}
             onDragStart={(e) => onDragStart(e, item.type)}
             onClick={() => onAddNode(item.type)}
             className="flex items-center gap-3 px-3 py-2.5 rounded-fds-md cursor-grab active:cursor-grabbing

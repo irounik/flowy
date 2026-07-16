@@ -3,12 +3,14 @@ from collections.abc import AsyncGenerator
 from datetime import datetime
 from enum import StrEnum
 
-from sqlalchemy import DateTime, ForeignKey, String, Text, func
+from sqlalchemy import JSON, DateTime, ForeignKey, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from app.config import settings
+
+JsonType = JSON().with_variant(JSONB(), "postgresql")
 
 
 class Base(DeclarativeBase):
@@ -68,8 +70,8 @@ class Execution(Base):
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     current_node: Mapped[str | None] = mapped_column(String(255))
-    context: Mapped[dict] = mapped_column(JSONB, default=dict)
-    metrics: Mapped[dict] = mapped_column(JSONB, default=dict)
+    context: Mapped[dict] = mapped_column(JsonType, default=dict)
+    metrics: Mapped[dict] = mapped_column(JsonType, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     workflow: Mapped["Workflow"] = relationship(back_populates="executions")
@@ -130,7 +132,7 @@ class Event(Base):
         UUID(as_uuid=True), ForeignKey("executions.id"), nullable=False, index=True
     )
     type: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
-    payload: Mapped[dict] = mapped_column(JSONB, default=dict)
+    payload: Mapped[dict] = mapped_column(JsonType, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     execution: Mapped["Execution"] = relationship(back_populates="events")

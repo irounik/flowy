@@ -62,6 +62,20 @@ curl -X DELETE "http://localhost:8000/api/v1/memory"
 
 Scanned/image-only PDFs need OCR beyond the built-in PyPDF loader and are out of scope for this MVP.
 
+## Demo recording
+
+To record a local Swagger UI walkthrough without a live LLM key:
+
+```bash
+# terminal 1
+uv run python apps/retrieval-api/scripts/demo_server.py
+
+# terminal 2
+uv run python apps/retrieval-api/scripts/record_demo.py
+```
+
+This writes `/opt/cursor/artifacts/flowy-retrieval-demo.mp4` (and screenshots).
+
 ## License
 
 MIT. Cognee is Apache-2.0.
